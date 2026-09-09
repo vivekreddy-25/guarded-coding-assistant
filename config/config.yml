@@ -1,12 +1,18 @@
+# Main NeMo Guardrails config — which models to use and which rails are active.
+
 models:
+  # the model that actually answers coding questions
   - type: main
-    engine: openai
+    engine: openai   # NeMo talks to any OpenAI-compatible API through this engine type
     model: openai/gpt-oss-120b
     parameters:
-      base_url: "https://api.groq.com/openai/v1"
-      max_tokens: 800
-      temperature: 0.4
+      base_url: "https://api.groq.com/openai/v1"   # pointing the "openai" engine at Groq instead
+      max_tokens: 800     # enough room for a full code example without hitting Groq's rate limit
+      temperature: 0.4    # a bit of natural variation, but still focused
 
+  # separate model config just for the input safety check —
+  # kept deterministic (temp 0) since a safety judgment should be consistent,
+  # and max_tokens is tiny since it only ever needs to answer "Yes" or "No"
   - type: self_check_input
     engine: openai
     model: openai/gpt-oss-120b
@@ -15,6 +21,7 @@ models:
       max_tokens: 10
       temperature: 0.0
 
+  # same idea, for checking the output before it's shown to the user
   - type: self_check_output
     engine: openai
     model: openai/gpt-oss-120b
@@ -26,8 +33,9 @@ models:
 rails:
   input:
     flows:
-      - self check input
+      - self check input       # runs before the question reaches the model
+
   output:
     flows:
-      - self check output
-      - check output secrets
+      - self check output      # LLM-based review of the generated answer
+      - check output secrets   # my own regex/entropy check, catches things the LLM check misses

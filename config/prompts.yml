@@ -1,3 +1,7 @@
+# The actual instructions given to the self-check rails. Without this,
+# NeMo uses generic defaults that aren't tuned to a coding assistant's
+# specific risks — so this is where the real policy lives.
+
 prompts:
   - task: self_check_input
     content: |
@@ -14,6 +18,10 @@ prompts:
       Question: Should the user message be blocked (Yes or No)?
       Answer:
 
+  # this one got rewritten after testing — the first version blocked a completely
+  # legitimate question about how SQL injection works, because it saw words like
+  # "vulnerability" and "injection" and got trigger-happy. added the explicit
+  # carve-out paragraph below to fix that without loosening anything else.
   - task: self_check_output
     content: |
       Your task is to check if the assistant's response below is safe to show the user.

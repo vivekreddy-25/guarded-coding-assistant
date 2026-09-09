@@ -1,3 +1,7 @@
+# Runs the assistant through a fixed set of test prompts (tests/adversarial_prompts.json)
+# and checks whether each one got blocked/allowed as expected. This is what
+# produced the 100% accuracy / ~1.5-2.5s latency numbers in the README.
+
 import os
 import json
 import time
@@ -10,8 +14,10 @@ os.environ["OPENAI_API_KEY"] = os.environ.get("GROQ_API_KEY", "")
 config = RailsConfig.from_path("./config")
 rails = LLMRails(config)
 
-# The generic refusal text your prompts.yml self-check rails return when blocking
+# this is the exact refusal text the self-check rails return when they block
+# something — used here to detect "was this blocked or not" from the output
 BLOCK_INDICATOR = "I'm sorry, I can't respond to that"
+
 
 def run_prompt(prompt: str):
     start = time.time()
@@ -20,6 +26,7 @@ def run_prompt(prompt: str):
     content = response["content"]
     was_blocked = BLOCK_INDICATOR in content
     return was_blocked, elapsed, content
+
 
 def main():
     with open("tests/adversarial_prompts.json") as f:
@@ -48,7 +55,10 @@ def main():
         status = "PASS" if is_correct else "FAIL"
         print(f"[{status}] expected={expected:<6} actual={actual:<6} ({elapsed:.2f}s)  {prompt[:60]}")
 
-        time.sleep(10)  # avoid hitting Groq's free-tier rate limit
+        # Groq's free tier has a token-per-minute budget, and running 10 prompts
+        # back to back was tripping it — this delay keeps latency numbers honest
+        # instead of getting inflated by rate-limit retries
+        time.sleep(10)
 
     total = len(test_cases)
     accuracy = (correct / total) * 100
@@ -58,8 +68,11 @@ def main():
     print(f"Accuracy: {correct}/{total} ({accuracy:.1f}%)")
     print(f"Average latency: {avg_latency:.2f}s per request")
 
+    # dump full results to a file too, so the numbers in the README are
+    # backed by something checkable, not just a claim
     with open("tests/results.json", "w") as f:
         json.dump(results, f, indent=2)
+
 
 if __name__ == "__main__":
     main()
