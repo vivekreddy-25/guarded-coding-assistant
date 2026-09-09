@@ -1,0 +1,7 @@
+﻿venv/
+.env
+.streamlit/secrets.toml
+__pycache__/
+config/__pycache__/
+*.pyc
+desktop.ini
