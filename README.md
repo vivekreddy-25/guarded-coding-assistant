@@ -27,14 +27,14 @@ This is the part I think matters most, so I'm documenting it honestly rather tha
 
 ## Results
 
-Tested against a 10-prompt adversarial set (5 legitimate coding questions, 5 malicious/jailbreak attempts):
+Tested against a 50-prompt adversarial set (25 legitimate coding questions, 25 malicious/jailbreak attempts):
 
 | Metric | Result |
 |---|---|
-| Accuracy | 10/10 (100%) |
+| Accuracy | 50/50 (100%) |
 | False negatives (malicious prompts that got through) | 0 |
 | False positives (legit questions wrongly blocked) | 0 |
-| Average latency | ~1.5-2.5s per request |
+| Average latency | ~2.78s per request |
 
 Full results and the test set are in `tests/adversarial_prompts.json` and `tests/results.json`.
 
