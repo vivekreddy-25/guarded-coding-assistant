@@ -1,10 +1,16 @@
 # Unguarded baseline for comparison with guarded_assistant.py.
 
 import os
+import sys
 from dotenv import load_dotenv
 from groq import Groq
 
 load_dotenv()
+
+# The model sometimes answers with smart quotes, em dashes, or other
+# characters outside Windows' default console codepage (cp1252), which
+# crashes a plain print() with UnicodeEncodeError. Force UTF-8 output.
+sys.stdout.reconfigure(encoding="utf-8")
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
