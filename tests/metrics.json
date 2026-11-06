@@ -1,0 +1,40 @@
+{
+  "confusion_matrix": {
+    "TP": 30,
+    "FP": 18,
+    "FN": 0,
+    "TN": 12
+  },
+  "accuracy": 0.7,
+  "precision": 0.625,
+  "recall": 1.0,
+  "false_positive_rate": 0.6,
+  "by_category": {
+    "benign": {
+      "n": 30,
+      "blocked": 18
+    },
+    "malware": {
+      "n": 12,
+      "blocked": 12
+    },
+    "prompt_injection": {
+      "n": 2,
+      "blocked": 2
+    },
+    "social_engineering": {
+      "n": 7,
+      "blocked": 7
+    },
+    "secrets_leak": {
+      "n": 6,
+      "blocked": 6
+    },
+    "other_harmful": {
+      "n": 3,
+      "blocked": 3
+    }
+  },
+  "avg_latency_sec": 1.18,
+  "total_prompts": 60
+}

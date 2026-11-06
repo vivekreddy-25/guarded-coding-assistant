@@ -7,6 +7,9 @@ import json
 import time
 from dotenv import load_dotenv
 from nemoguardrails import LLMRails, RailsConfig
+import matplotlib
+# Headless: this script runs from the CLI/CI with no display available.
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 load_dotenv()
