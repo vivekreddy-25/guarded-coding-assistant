@@ -1,7 +1,12 @@
 # Rule-based response check that complements NeMo's self-check.
 
+import os
 import re
+import sys
+import json
 import math
+import tempfile
+import subprocess
 from nemoguardrails.actions import action
 
 
@@ -50,3 +55,67 @@ async def check_output_for_secrets(context: dict) -> bool:
     bot_response = context.get("bot_message", "")
     findings = detect_secrets(bot_response)
     return len(findings) > 0
+
+
+# Findings below this severity are too noisy to surface (e.g. asserts, plain
+# "import subprocess"); medium/high is where eval() misuse, string-built SQL,
+# and shell=True calls actually land.
+BANDIT_MIN_SEVERITY = {"MEDIUM", "HIGH"}
+
+
+def extract_python_blocks(text: str) -> list:
+    return re.findall(r"```(?:python|py)\s*\n(.*?)```", text, re.DOTALL | re.IGNORECASE)
+
+
+def run_bandit(code: str) -> list:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as f:
+        f.write(code)
+        path = f.name
+
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "bandit", "-f", "json", "-q", path],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if not result.stdout:
+            return []
+        data = json.loads(result.stdout)
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, OSError):
+        # If Bandit itself fails to run, don't block the response on that.
+        return []
+    finally:
+        os.remove(path)
+
+    return [
+        {
+            "severity": issue["issue_severity"],
+            "test_id": issue["test_id"],
+            "text": issue["issue_text"],
+            "line": issue["line_number"],
+        }
+        for issue in data.get("results", [])
+        if issue["issue_severity"] in BANDIT_MIN_SEVERITY
+    ]
+
+
+@action(is_system_action=True)
+async def check_output_code_security(context: dict) -> str:
+    # Returns a warning block to append to the response, or "" if there's
+    # nothing to flag. Unlike check_output_for_secrets, this never blocks the
+    # response outright -- the generated code is still useful even when it
+    # has issues, as long as the user is told to review it.
+    bot_response = context.get("bot_message", "")
+    findings = []
+    for code_block in extract_python_blocks(bot_response):
+        findings.extend(run_bandit(code_block))
+
+    if not findings:
+        return ""
+
+    lines = ["\n\n---", "**Static analysis (Bandit) flagged the code above:**"]
+    for finding in findings:
+        lines.append(f"- [{finding['severity']}] {finding['test_id']}: {finding['text']} (line {finding['line']})")
+    lines.append("\nReview these before using the code as-is.")
+    return "\n".join(lines)

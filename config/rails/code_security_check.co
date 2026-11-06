@@ -1,0 +1,8 @@
+# Flags risky Python (eval misuse, string-built SQL, shell=True, ...) with
+# Bandit. Unlike the secrets check, this doesn't block the response -- it
+# appends a warning so the user still gets the code but knows to review it.
+
+define subflow check output code security
+  $code_findings = execute check_output_code_security
+  if $code_findings
+    $bot_message = $bot_message + $code_findings

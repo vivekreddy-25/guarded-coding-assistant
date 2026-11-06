@@ -36,3 +36,4 @@ rails:
     flows:
       - self check output
       - check output secrets
+      - check output code security
